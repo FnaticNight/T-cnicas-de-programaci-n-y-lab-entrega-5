@@ -1,1 +1,0 @@
-# T-cnicas-de-programaci-n-y-lab-entrega-5
