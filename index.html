@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="es" ng-app="appRutas">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rutas Turísticas</title>
+
+    <!-- Leaflet (mapa) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+    <!-- Estilos propios -->
+    <link rel="stylesheet" href="css/estilos.css" />
+</head>
+
+<body ng-controller="RutasControlador">
+
+    <h1 class="titulo">Rutas Turísticas</h1>
+
+    <div class="contenedor">
+
+        <!-- ============================================= -->
+        <!--  1. LISTADO DE CIUDADES                       -->
+        <!-- ============================================= -->
+        <aside class="barra-lateral">
+            <div class="card">
+                <div class="card-header navy">📋 1. Seleccione Ciudad</div>
+                <div class="card-body">
+                    <ul class="lista-ciudades">
+                        <li ng-repeat="c in ciudades"
+                            ng-class="{ activa: ciudadSel.id === c.id }"
+                            ng-click="seleccionarCiudad(c)">
+                            <span class="ciudad-nombre">{{ c.nombre }}</span>
+                            <span class="ciudad-pais">{{ c.pais.nombre }}</span>
+                        </li>
+                    </ul>
+                    <div class="vacio" ng-if="ciudades.length === 0">Cargando ciudades...</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- ============================================= -->
+        <!--  PANEL PRINCIPAL                              -->
+        <!-- ============================================= -->
+        <section class="panel-principal">
+
+            <!-- Mensaje inicial -->
+            <div class="card" ng-if="!ciudadSel">
+                <div class="vacio">Seleccione una ciudad en el panel izquierdo para ver sus rutas.</div>
+            </div>
+
+            <!-- ----------------------------------------- -->
+            <!--  2. RUTAS DE LA CIUDAD                    -->
+            <!-- ----------------------------------------- -->
+            <div class="card" ng-if="ciudadSel">
+                <div class="card-header navy">
+                    <span>🏙️ Rutas en: {{ ciudadSel.nombre }}</span>
+                    <button class="btn btn-agregar" ng-click="nuevaRuta()">+ Agregar Ruta</button>
+                </div>
+
+                <!-- Formulario de ruta (agregar / editar) -->
+                <div class="form-linea" ng-if="mostrarFormRuta">
+                    <input class="med" type="text" ng-model="rutaForm.nombre" placeholder="Nombre de la ruta" />
+                    <select ng-model="rutaForm.idTipo"
+                            ng-options="t.id as t.nombre for t in tipos">
+                        <option value="">Tipo...</option>
+                    </select>
+                    <input class="gde" type="text" ng-model="rutaForm.descripcion" placeholder="Descripción" />
+                    <button class="btn btn-guardar" ng-click="guardarRuta()">Guardar</button>
+                    <button class="btn btn-cancelar" ng-click="cancelarRuta()">X</button>
+                </div>
+
+                <div class="card-body">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nombre de la Ruta</th>
+                                <th>Tipo</th>
+                                <th style="text-align:right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="r in rutas"
+                                class="clickable"
+                                ng-class="{ 'fila-sel': rutaSel.id === r.id }"
+                                ng-click="seleccionarRuta(r)">
+                                <td>{{ r.id }}</td>
+                                <td><strong>{{ r.nombre }}</strong></td>
+                                <td><span class="badge">{{ r.tipo.nombre }}</span></td>
+                                <td class="acciones" style="text-align:right;">
+                                    <button class="btn btn-editar"
+                                            ng-click="editarRuta(r); $event.stopPropagation()">Editar</button>
+                                    <button class="btn btn-eliminar"
+                                            ng-click="eliminarRuta(r); $event.stopPropagation()">Eliminar</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="vacio" ng-if="rutas.length === 0">Esta ciudad no tiene rutas registradas.</div>
+                </div>
+            </div>
+
+            <!-- ----------------------------------------- -->
+            <!--  3. PARADAS DE LA RUTA                    -->
+            <!-- ----------------------------------------- -->
+            <div class="card" ng-if="rutaSel">
+                <div class="card-header verde">
+                    <span>🔴 Paradas de la Ruta: {{ rutaSel.nombre }}</span>
+                    <button class="btn btn-agregar" ng-click="nuevaParada()">+ Agregar Parada</button>
+                </div>
+
+                <!-- Formulario de parada (agregar / editar) -->
+                <div class="form-linea" ng-if="mostrarFormParada">
+                    <input class="peq" type="number" ng-model="paradaForm.orden" placeholder="Orden" />
+                    <input class="med" type="text" ng-model="paradaForm.nombre" placeholder="Nombre parada" />
+                    <input class="med" type="number" step="any" ng-model="paradaForm.latitud" placeholder="Latitud" />
+                    <input class="med" type="number" step="any" ng-model="paradaForm.longitud" placeholder="Longitud" />
+                    <input class="peq" type="number" ng-model="paradaForm.tiempo" placeholder="Min." />
+                    <input class="gde" type="text" ng-model="paradaForm.descripcion" placeholder="Descripción corta" />
+                    <button class="btn btn-guardar" ng-click="guardarParada()">Guardar</button>
+                    <button class="btn btn-cancelar" ng-click="cancelarParada()">X</button>
+                </div>
+
+                <div class="card-body">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Orden</th>
+                                <th>Parada</th>
+                                <th>Coordenadas (Lat, Long)</th>
+                                <th>Tiempo</th>
+                                <th>Descripción</th>
+                                <th style="text-align:right;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="p in paradas">
+                                <td>{{ p.id }}</td>
+                                <td>{{ p.orden }}</td>
+                                <td><strong>{{ p.nombre }}</strong></td>
+                                <td class="coordenadas">({{ p.latitud }}, {{ p.longitud }})</td>
+                                <td>{{ p.tiempo }} min</td>
+                                <td>{{ p.descripcion }}</td>
+                                <td class="acciones" style="text-align:right;">
+                                    <button class="btn btn-editar" ng-click="editarParada(p)">Editar</button>
+                                    <button class="btn btn-eliminar" ng-click="eliminarParada(p)">Eliminar</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="vacio" ng-if="paradas.length === 0">Esta ruta no tiene paradas registradas.</div>
+                </div>
+            </div>
+
+            <!-- ----------------------------------------- -->
+            <!--  4. MAPA DE LA RUTA                       -->
+            <!-- ----------------------------------------- -->
+            <div class="card" ng-if="rutaSel">
+                <div class="card-header navy">
+                    <span>🗺️ Mapa de la Ruta: {{ rutaSel.nombre }}</span>
+                </div>
+                <div class="mapa" mapa-paradas paradas="paradas"></div>
+            </div>
+
+        </section>
+    </div>
+
+    <!-- ============================================= -->
+    <!--  Librerías (CDN)                              -->
+    <!-- ============================================= -->
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.8.2/angular.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- ============================================= -->
+    <!--  Código del aplicativo                        -->
+    <!-- ============================================= -->
+    <script src="js/app.js"></script>
+    <script src="js/servicios/ciudadServicio.js"></script>
+    <script src="js/servicios/tipoServicio.js"></script>
+    <script src="js/servicios/rutaServicio.js"></script>
+    <script src="js/servicios/paradaServicio.js"></script>
+    <script src="js/directivas/mapaParadas.js"></script>
+    <script src="js/controladores/rutasControlador.js"></script>
+
+</body>
+</html>
